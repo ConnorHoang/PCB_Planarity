@@ -7,7 +7,9 @@ By wednesday (Everyone research a method):
 - Sam: Kuratowski - Vertex addition method
 - Lukas: Cross-number
 - Pranav: - Dynamic algorithms
-- Connor:Turrans (Tarjan?) - Path addition method
+- Connor:Turan's Theorem
+
+- extra: Path addition method
 
 Meet Friday (24):
 
