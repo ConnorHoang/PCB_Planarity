@@ -1,0 +1,7 @@
+,Source1,Source2,Led1,Led2,Resistor1,Resistor2
+Source1,0,1,1,0,0,0
+Source2,1,0,0,0,0,1
+Led1,1,0,0,1,0,0
+Led2,0,0,1,0,1,0
+Resistor1,0,0,0,1,0,1
+Resistor2,0,1,0,0,1,0
