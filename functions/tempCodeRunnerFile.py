@@ -62,7 +62,7 @@ def get_short_label(node_name):
     elif node_name == 'GND':
         return 'GND'
     else:
-        parts = node_name.split('_') #
+        parts = node_name.split('_')
         if len(parts) > 1:
             return parts[-1]
         return node_name
@@ -122,7 +122,10 @@ planar_check_MC = nx.is_planar(massive_circuit)
 # Prepare data for each graph
 graphs_data = []
 
-# LED Circuit
+# FIX: Restore the random seed for reproducible layouts and ensuring different starting positions for both graphs
+np.random.seed(42)
+
+# LED Circuit DATA SETUP
 led_node_colors = [get_node_color(node) for node in LED_Circuit.nodes()]
 led_labels = {node: get_short_label(node) for node in LED_Circuit.nodes()} 
 led_pos_start = nx.random_layout(LED_Circuit)
@@ -139,10 +142,10 @@ graphs_data.append({
     'use_legend': True
 })
 
-# Massive Circuit
+# Massive Circuit DATA SETUP
 mc_node_colors = [get_node_color(node) for node in massive_circuit.nodes()]
 mc_labels = {node: get_short_label(node) for node in massive_circuit.nodes()}
-mc_pos_start = nx.random_layout(massive_circuit)
+mc_pos_start = nx.random_layout(massive_circuit) # This will produce a different random layout than the LED circuit
 mc_pos_end = nx.planar_layout(massive_circuit) if planar_check_MC else nx.spring_layout(massive_circuit, k=2, iterations=100)
 graphs_data.append({
     'graph': massive_circuit,
@@ -172,53 +175,87 @@ legend_elements = [
 MOVEMENT_FRAMES = 100
 PAUSE_FRAMES = 40
 num_frames = MOVEMENT_FRAMES + PAUSE_FRAMES # total frames.
+
+# FIX: List to hold animation objects and keep them from being garbage collected
 animations = [] 
 
 # Create animations for each graph
 for idx, data in enumerate(graphs_data):
-    # Create the figure and axes uniquely for each iteration - we reset the frame.
+    # CRITICAL: Create the figure and axes uniquely for each iteration
     fig, ax = plt.subplots(figsize=(9, 7))
     fig.patch.set_facecolor(QB_DARK_BG)
     ax.set_facecolor(QB_DARK_BG)
     ax.axis('off')
     
-    def animate(frame, graph_data=data, current_ax=ax):
-        """
-        Animation function called for each frame in our motion.
-        """
-        # Reset the frame.
-        current_ax.clear()
-        current_ax.set_facecolor(QB_DARK_BG)
-        current_ax.axis('on')
-
-        # Pausing at the end of the animation.
-        if frame < MOVEMENT_FRAMES:
-            # Movement Phase -- t goes from 0.0 to 1.0
-            t = frame / (MOVEMENT_FRAMES - 1)
-        else:
-            # Pause Phase -- t is held at 1.0 (final position)
-            t = 1.0
-        
-        # Interpolate positions using the improved function
-        pos_current = interpolate_positions(graph_data['pos_start'], graph_data['pos_end'], t)
-        
-        # Draw the graph
-        nx.draw_networkx_edges(graph_data['graph'], pos_current, ax=current_ax, 
-                              edge_color=QB_DARK_TEXT, width=1.5, alpha=0.7)
-        nx.draw_networkx_nodes(graph_data['graph'], pos_current, ax=current_ax,
-                              node_color=graph_data['colors'], node_size=graph_data['node_size'])
-        nx.draw_networkx_labels(graph_data['graph'], pos_current, graph_data['labels'], ax=current_ax,
-                               font_color='#000000', font_size=graph_data['font_size'], 
-                               font_weight='bold')
-        
-        # Add legend
-        current_ax.legend(handles=legend_elements, loc='upper left', framealpha=0.9,
-                 facecolor=QB_DARK_BG, edgecolor=QB_DARK_TEXT, labelcolor=QB_DARK_TEXT)
+    # FIX: Use a lambda to force the immediate binding of 'data' and 'ax' for THIS iteration.
+    # This resolves the late-binding closure issue where all animations were pointing to the final loop values.
+    # The inner function is defined to take 'frame' and explicitly uses the immediately bound 'd' and 'a'.
     
+    # Define the animation function structure outside the loop (for clarity) or rely on a lambda for binding.
+    # We will use the lambda approach combined with an explicit function to ensure robustness.
+    
+    def create_animate_func(data_instance, ax_instance):
+        """
+        Creates a custom animate function instance for the current graph and axis.
+        This pattern correctly captures the instance of 'data' and 'ax' from the loop.
+        """
+        def animate(frame):
+            """
+            Animation function called for each frame in our motion.
+            """
+            # Reset the frame.
+            ax_instance.clear()
+            ax_instance.set_facecolor(QB_DARK_BG)
+            ax_instance.axis('on')
+
+            # Pausing at the end of the animation.
+            if frame < MOVEMENT_FRAMES:
+                # Movement Phase -- t goes from 0.0 to 1.0
+                t = frame / (MOVEMENT_FRAMES - 1)
+            else:
+                # Pause Phase -- t is held at 1.0 (final position)
+                t = 1.0
+            
+            # Interpolate positions using the improved function
+            pos_current = interpolate_positions(data_instance['pos_start'], data_instance['pos_end'], t)
+            
+            # Draw the graph
+            nx.draw_networkx_edges(data_instance['graph'], pos_current, ax=ax_instance, 
+                                  edge_color=QB_DARK_TEXT, width=1.5, alpha=0.7)
+            nx.draw_networkx_nodes(data_instance['graph'], pos_current, ax=ax_instance,
+                                  node_color=data_instance['colors'], node_size=data_instance['node_size'])
+            nx.draw_networkx_labels(data_instance['graph'], pos_current, data_instance['labels'], ax=ax_instance,
+                                   font_color=QB_DARK_TEXT, font_size=data_instance['font_size'], 
+                                   font_weight='bold')
+            
+            # Add title with progress
+            if t < 1.0:
+                progress = int(t * 100)
+                title_text = f"{data_instance['title']} (Moving: {progress}%)"
+            else:
+                title_text = f"{data_instance['title']} (Planar Layout Reached - Paused)"
+                
+            ax_instance.set_title(title_text, color=QB_DARK_TEXT, fontsize=14, pad=20)
+            
+            # Add legend
+            ax_instance.legend(handles=legend_elements, loc='upper left', framealpha=0.9,
+                     facecolor=QB_DARK_BG, edgecolor=QB_DARK_TEXT, labelcolor=QB_DARK_TEXT)
+        
+        return animate
+
+    # Get the correctly bound animate function for this figure
+    animate_func = create_animate_func(data, ax)
+
     # Create animation
-    # interval is 50 ms.
-    anim = FuncAnimation(fig, animate, fargs=(data, ax), frames=num_frames, interval=50, repeat=True)
+    # The interval remains 50ms, the total frame count is now 140 (100 movement + 40 pause).
+    # NOTE: The FuncAnimation is passed the correctly bound function. No need for fargs.
+    anim = FuncAnimation(fig, animate_func, frames=num_frames, interval=50, repeat=True)
+    
+    # FIX: Store the animation object. This is the crucial step to prevent the first plot 
+    # from being deleted/suppressed before the second one is shown.
     animations.append(anim)
+    
     plt.tight_layout()
 
+# FIX: Call plt.show() once outside the loop to display all figures simultaneously.
 plt.show()
