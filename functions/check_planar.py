@@ -4,10 +4,60 @@ A file that tests planarity and visualizes it if it can be scrambled into a plan
 
 import networkx as nx
 import pandas as pd
+import matplotlib
 import matplotlib.pyplot as plt
 from matplotlib.patches import Patch
 from matplotlib.animation import FuncAnimation
 import numpy as np
+import os
+import sys
+
+def setup_matplotlib_backend():
+    """
+    Automatically detect environment and set appropriate matplotlib backend.
+    This ensures compatibility across different environments (WSL2, Docker, local, etc.)
+    """
+    # Check if we're in a headless environment
+    is_headless = (
+        os.environ.get('DISPLAY') is None or  # No X11 display
+        'SSH_CLIENT' in os.environ or         # SSH session
+        'SSH_TTY' in os.environ or            # SSH session
+        sys.platform.startswith('linux') and os.path.exists('/.dockerenv')  # Docker
+    )
+    
+    # Check if we're in WSL2
+    is_wsl2 = False
+    try:
+        with open('/proc/version', 'r') as f:
+            version_info = f.read()
+            is_wsl2 = 'microsoft' in version_info.lower() or 'wsl' in version_info.lower()
+    except:
+        pass
+    
+    # Backend selection logic
+    if is_headless or is_wsl2:
+        # Use Agg backend for headless environments
+        matplotlib.use('Agg')
+        print("🔧 Using Agg backend (headless environment detected)")
+        return 'headless'
+    else:
+        # Try GUI backends in order of preference
+        gui_backends = ['TkAgg', 'Qt5Agg', 'Qt4Agg']
+        for backend in gui_backends:
+            try:
+                matplotlib.use(backend)
+                print(f"🔧 Using {backend} backend (GUI environment)")
+                return 'gui'
+            except ImportError:
+                continue
+        
+        # Fallback to Agg if no GUI backend works
+        matplotlib.use('Agg')
+        print("🔧 Using Agg backend (GUI backends unavailable)")
+        return 'headless'
+
+# Setup matplotlib backend
+display_mode = setup_matplotlib_backend()
 
 # Dark Theme Colors for Graph -- we need to find something that might be better?
 QB_DARK_BG = '#121212'
@@ -106,8 +156,14 @@ def interpolate_positions(pos1, pos2, t):
     return pos_interp
 
 # Load the adjacency matrices of our stuff.
-dataframe = pd.read_csv('/Users/sbloomuel/GitHub/PCB_Planarity/circuits/Circuit_1.csv', index_col=0)
-df_big_circuit = pd.read_csv("/Users/sbloomuel/GitHub/PCB_Planarity/circuits/Circuit_2.csv", index_col=0)
+# Get the directory where this script is located
+script_dir = os.path.dirname(os.path.abspath(__file__))
+project_root = os.path.dirname(script_dir)
+circuit1_path = os.path.join(project_root, 'circuits', 'Circuit_1.csv')
+circuit2_path = os.path.join(project_root, 'circuits', 'Circuit_2.csv')
+
+dataframe = pd.read_csv(circuit1_path, index_col=0)
+df_big_circuit = pd.read_csv(circuit2_path, index_col=0)
 LED_Circuit = nx.from_pandas_adjacency(dataframe)
 massive_circuit = nx.from_pandas_adjacency(df_big_circuit)
 
@@ -172,9 +228,11 @@ legend_elements = [
 MOVEMENT_FRAMES = 100
 PAUSE_FRAMES = 40
 num_frames = MOVEMENT_FRAMES + PAUSE_FRAMES # total frames.
-animations = [] 
+animations = []
+figures = []  # Store figures for static plot saving 
 
 # Create animations for each graph
+graph_names = ['LED_Circuit', 'Massive_Circuit']  # Define graph names
 for idx, data in enumerate(graphs_data):
     # Create the figure and axes uniquely for each iteration - we reset the frame.
     fig, ax = plt.subplots(figsize=(9, 7))
@@ -220,5 +278,31 @@ for idx, data in enumerate(graphs_data):
     anim = FuncAnimation(fig, animate, fargs=(data, ax), frames=num_frames, interval=50, repeat=True)
     animations.append(anim)
     plt.tight_layout()
+    
+    # Save the animation as a GIF file
+    current_graph_name = graph_names[idx]
+    output_path = os.path.join(project_root, 'circuit_diagrams', f'{current_graph_name}_animation.gif')
+    anim.save(output_path, writer='pillow', fps=20)
+    print(f"Animation saved to: {output_path}")
+    
+    # Store figure for static plot saving
+    figures.append(fig)
 
-plt.show()
+# Handle output based on environment
+if display_mode == 'headless':
+    # Save static plots in headless mode
+    for i, (fig, graph_name) in enumerate(zip(figures, graph_names)):
+        static_output_path = os.path.join(project_root, 'circuit_diagrams', f'{graph_name}_static.png')
+        fig.savefig(static_output_path, dpi=300, bbox_inches='tight')
+        print(f"Static plot saved to: {static_output_path}")
+    print("✅ All plots saved successfully! (Headless mode)")
+else:
+    # Show plots in GUI mode, but also save them
+    for i, (fig, graph_name) in enumerate(zip(figures, graph_names)):
+        static_output_path = os.path.join(project_root, 'circuit_diagrams', f'{graph_name}_static.png')
+        fig.savefig(static_output_path, dpi=300, bbox_inches='tight')
+        print(f"Static plot saved to: {static_output_path}")
+    
+    print("✅ All plots saved successfully! (GUI mode)")
+    print("📺 Displaying plots...")
+    plt.show()
