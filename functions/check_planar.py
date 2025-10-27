@@ -38,7 +38,7 @@ def setup_matplotlib_backend():
     if is_headless or is_wsl2:
         # Use Agg backend for headless environments
         matplotlib.use('Agg')
-        print("🔧 Using Agg backend (headless environment detected)")
+        print("Using Agg backend (headless environment detected)")
         return 'headless'
     else:
         # Try GUI backends in order of preference
@@ -46,14 +46,14 @@ def setup_matplotlib_backend():
         for backend in gui_backends:
             try:
                 matplotlib.use(backend)
-                print(f"🔧 Using {backend} backend (GUI environment)")
+                print(f" Using {backend} backend (GUI environment)")
                 return 'gui'
             except ImportError:
                 continue
         
         # Fallback to Agg if no GUI backend works
         matplotlib.use('Agg')
-        print("🔧 Using Agg backend (GUI backends unavailable)")
+        print(" Using Agg backend (GUI backends unavailable)")
         return 'headless'
 
 # Setup matplotlib backend
@@ -295,7 +295,7 @@ if display_mode == 'headless':
         static_output_path = os.path.join(project_root, 'circuit_diagrams', f'{graph_name}_static.png')
         fig.savefig(static_output_path, dpi=300, bbox_inches='tight')
         print(f"Static plot saved to: {static_output_path}")
-    print("✅ All plots saved successfully! (Headless mode)")
+    print("All plots saved successfully! (Headless mode)")
 else:
     # Show plots in GUI mode, but also save them
     for i, (fig, graph_name) in enumerate(zip(figures, graph_names)):
@@ -303,6 +303,6 @@ else:
         fig.savefig(static_output_path, dpi=300, bbox_inches='tight')
         print(f"Static plot saved to: {static_output_path}")
     
-    print("✅ All plots saved successfully! (GUI mode)")
-    print("📺 Displaying plots...")
+    print("All plots saved successfully! (GUI mode)")
+    print("Displaying plots...")
     plt.show()
