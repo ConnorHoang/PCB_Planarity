@@ -16,6 +16,8 @@ import numpy as np
 import os
 import sys
 import random
+from itertools import combinations
+import random
 
 # Get the directory of this script and construct path relative to project root
 script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -36,60 +38,17 @@ print(graph.edges())
 
 graph = nx.complete_bipartite_graph(3, 3)
 
-
-is_planar , embedding = nx.check_planarity(graph);
-
-if  is_planar:
-    print("The graph is planar");
-else:
-    print("The graph is not planar");
-
-
-def guess_crossing(graph):
-    reps = 30;
-    layout = nx.spring_layout(graph);
-    lowest = None;
-    lowest_graph = None;
-
-    for i in range(reps):
-        seed = random.randint(0, 1000000);
-        rep_pos = layout(graph,seed)
-
-        crossings = count_crossings(graph, rep_pos);
-        if best is None or crossings < best:
-            best = crossings;
-            lowest_graph = rep_pos;
-    return best,lowest_graph;
-
-
-
-
-
-
-#chat
-
+# ---- helpers for estimating crossings ----
 def _ccw(A, B, C):
-    # return True if points A,B,C are counter-clockwise
     return (C[1]-A[1])*(B[0]-A[0]) > (B[1]-A[1])*(C[0]-A[0])
 
 def segments_intersect(p1, p2, p3, p4):
-    # segment p1-p2 intersects p3-p4 (proper intersection)
-    # excludes touching at endpoints (which for graph crossings we usually ignore if they share nodes)
     return (_ccw(p1, p3, p4) != _ccw(p2, p3, p4)) and (_ccw(p1, p2, p3) != _ccw(p1, p2, p4))
 
-
 def count_crossings(G, pos):
-    """
-    G : networkx.Graph (undirected, simple)
-    pos : dict node -> (x,y) coordinates
-    returns: integer number of pairwise edge crossings in that drawing
-    """
-    # prepare list of edges as pairs of endpoints coordinates, ignoring multi-edges/selfloops
     edges = [(u, v) for u, v in G.edges() if u != v]
     crossings = 0
-    # check every unordered pair of edges
     for (u, v), (x, y) in combinations(edges, 2):
-        # skip if edges share an endpoint (not a crossing)
         if set((u, v)) & set((x, y)):
             continue
         p1, p2, p3, p4 = pos[u], pos[v], pos[x], pos[y]
@@ -97,6 +56,38 @@ def count_crossings(G, pos):
             crossings += 1
     return crossings
 
+def guess_crossing(G, reps=30):
+    best = None
+    best_pos = None
+    for _ in range(reps):
+        seed = random.randint(0, 1_000_000)
+        pos = nx.spring_layout(G, seed=seed)
+        crossings = count_crossings(G, pos)
+        if best is None or crossings < best:
+            best = crossings
+            best_pos = pos
+    return best, best_pos
 
+
+################################
+
+is_planar , embedding = nx.check_planarity(graph);
+
+if  is_planar:
+    print("The graph is planar");
+else:
+    print("The graph is not planar");
+    best, lowest_graph = guess_crossing(graph)
+    print(best)
+    print(lowest_graph)
+    # lowest_graph is a position dict; draw the graph using these positions
+    plt.figure(figsize=(8, 6))
+    nx.draw_networkx(graph, pos=lowest_graph, with_labels=True, node_color='lightblue', edgecolors='black')
+    out_dir = os.path.join(project_root, 'circuit_diagrams')
+    os.makedirs(out_dir, exist_ok=True)
+    out_path = os.path.join(out_dir, 'nonplanar_best_layout.png')
+    plt.savefig(out_path, dpi=200, bbox_inches='tight')
+    print(f"Saved best layout to: {out_path}")
+    plt.close()
     
 
