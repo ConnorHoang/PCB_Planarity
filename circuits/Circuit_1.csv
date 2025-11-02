@@ -1,7 +1,0 @@
-,Source_1,Source_2,Led_1,Led_2,Resistor_1,Resistor_2
-Source_1,0,1,1,0,0,0
-Source_2,1,0,0,0,0,1
-Led_1,1,0,0,1,0,0
-Led_2,0,0,1,0,1,0
-Resistor_1,0,0,0,1,0,1
-Resistor_2,0,1,0,0,1,0
