@@ -13,7 +13,6 @@ import numpy as np
 import os
 import sys
 
-
 # Dark Theme Colors for Graph
 QB_DARK_BG = '#121212'
 QB_DARK_TEXT = '#FFFFFF'

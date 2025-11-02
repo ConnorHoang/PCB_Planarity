@@ -13,58 +13,6 @@ import numpy as np
 import os
 import sys
 
-# This is all environment setup...
-def setup_matplotlib_backend():
-    """
-    Automatically detect environment and set appropriate matplotlib backend.
-    This ensures compatibility across different environments (WSL2, Docker, local, etc.)
-    """
-    # Check if we're in a headless environment
-    is_headless = (
-        os.environ.get('DISPLAY') is None or  # No X11 display
-        'SSH_CLIENT' in os.environ or         # SSH session
-        'SSH_TTY' in os.environ or            # SSH session
-        sys.platform.startswith('linux') and os.path.exists('/.dockerenv')  # Docker
-    )
-    
-    # Check if we're in WSL2
-    is_wsl2 = False
-    try:
-        with open('/proc/version', 'r') as f:
-            version_info = f.read()
-            is_wsl2 = 'microsoft' in version_info.lower() or 'wsl' in version_info.lower()
-    except:
-        pass
-    
-    # Backend selection logic
-    if is_headless or is_wsl2:
-        # Use Agg backend for headless environments
-        matplotlib.use('Agg')
-        print("Using Agg backend (headless environment detected)")
-        return 'headless'
-    else:
-        # Try GUI backends in order of preference
-        gui_backends = ['TkAgg', 'Qt5Agg', 'Qt4Agg']
-        for backend in gui_backends:
-            try:
-                matplotlib.use(backend)
-                print(f" Using {backend} backend (GUI environment)")
-                return 'gui'
-            except ImportError:
-                continue
-        
-        # Fallback to Agg if no GUI backend works
-        matplotlib.use('Agg')
-        print(" Using Agg backend (GUI backends unavailable)")
-        return 'headless'
-
-# Setup matplotlib backend
-display_mode = setup_matplotlib_backend()
-
-
-## NOW WE CAN ACTUALLY ANALYZE OUR PLANAR GRAPHS:
-
-
 # Dark Theme Colors for Graph -- we need to find something that might be better?
 QB_DARK_BG = '#121212'
 QB_DARK_TEXT = '#FFFFFF'
