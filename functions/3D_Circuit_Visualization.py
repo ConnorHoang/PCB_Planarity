@@ -152,7 +152,7 @@ def visualize_k33_layers_3d(df_modified, via_csv_path, out_folder="Figures", sho
         [(xmax, ymax, 0.0), (xmin, ymax, 0.0)],
         [(xmin, ymax, 0.0), (xmin, ymin, 0.0)]
     ]
-    border_z0 = Line3DCollection(border_z0_edges, colors=(0.0, 0.8, 0.8), linewidths=3, alpha=0.9)
+    border_z0 = Line3DCollection(border_z0_edges, colors=(0.0, 0.8, 0.8), linewidths=3, alpha=0.6)
     ax.add_collection3d(border_z0)
     
     # Layer 1 border (orange/red color)
@@ -162,7 +162,7 @@ def visualize_k33_layers_3d(df_modified, via_csv_path, out_folder="Figures", sho
         [(xmax, ymax, 1.0), (xmin, ymax, 1.0)],
         [(xmin, ymax, 1.0), (xmin, ymin, 1.0)]
     ]
-    border_z1 = Line3DCollection(border_z1_edges, colors=(0.8, 0.3, 0.0), linewidths=3, alpha=0.9)
+    border_z1 = Line3DCollection(border_z1_edges, colors=(0.8, 0.3, 0.0), linewidths=1, alpha=0.6)
     ax.add_collection3d(border_z1)
     
     # Draw edges for Layer 0 (modified graph with pad-VIA connections)
