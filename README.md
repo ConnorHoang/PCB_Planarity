@@ -1,6 +1,10 @@
 # PCB_Planarity
-Discrete Mathematics Graph Theory Project
 
-Goal: Have a functional program to optomize for minimal crossings/layers given size of board. 
+## Overview
+This project concerns applications of graph theory in PCB design--more specifically how we can utilize planarity to create a functional circuit on a PCB plane. We utilize the NetworkX library to test planarity, exploring its properties and algorithms along the way.
 
+![](Figures/Planar%20K3_3%203D%20(animation).gif)
+
+## Contributors:
+Samuel Bloom, Connor Hoang, Pranav Bonthu, Lukas LittleJohn.
 

@@ -67,7 +67,7 @@ def graph_nonplanar(K33_graph):
                 labels[node] = node
 
     # Animation Control Variables
-    MOVEMENT_FRAMES = 100  # Match the planar circuit animation length
+    MOVEMENT_FRAMES = 100 
     PAUSE_FRAMES = 40
     num_frames = MOVEMENT_FRAMES + PAUSE_FRAMES
 
@@ -180,14 +180,8 @@ def save_visualization(fig, anim, animate_func, movement_frames, output_dir="Fig
 # main function to run the code:
 if __name__ == "__main__":
     csv_path = os.path.join(os.getcwd(), "CSV", "Nonplanar_K3,3.csv")
-    
-    # Check planarity
     K33_graph, is_planar = check_planarity(csv_path)
-    
-    # Graph the nonplanar function
     fig, anim, animate_func, movement_frames = graph_nonplanar(K33_graph)
-    
-    # Save the visualization
     save_visualization(fig, anim, animate_func, movement_frames, output_dir="Figures")
     
     plt.show()
