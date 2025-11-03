@@ -9,12 +9,13 @@ import matplotlib
 import matplotlib.pyplot as plt
 from matplotlib.patches import Patch
 from matplotlib.animation import FuncAnimation
+import matplotlib.patheffects
 import numpy as np
 import os
 import sys
 
 # Dark Theme Colors for Graph -- we need to find something that might be better?
-QB_DARK_BG = '#121212'
+QB_DARK_BG = '#000000'
 QB_DARK_TEXT = '#FFFFFF'
 QB_COLORS = ['#E31A1C', '#33A02C', '#FF7F00', '#1F78B4', '#6A3D9A',
              '#FB9A99', '#B2DF8A', '#FDBF6F', '#A6CEE3', '#CAB2D6']
@@ -128,6 +129,7 @@ def build_dynamic_legend(graph):
     legend_elements = [
         Patch(facecolor=COMPONENT_COLORS[c], label=c) for c in used_components
     ]
+    
     return legend_elements
 
 # Load the adjacency matrices of our stuff.
@@ -207,7 +209,7 @@ for idx, data in enumerate(graphs_data):
     # Build legend dynamically for this specific graph
     legend_elements = build_dynamic_legend(data['graph'])
     
-    def animate(frame, graph_data=data, current_ax=ax):
+    def animate(frame, graph_data=data, current_ax=ax, legend_elems=legend_elements):
         """
         Animation function called for each frame in our motion.
         """
@@ -228,20 +230,18 @@ for idx, data in enumerate(graphs_data):
         pos_current = interpolate_positions(graph_data['pos_start'], graph_data['pos_end'], t)
         
         # Draw the graph
-        nx.draw_networkx_edges(graph_data['graph'], pos_current, ax=current_ax, 
-                              edge_color=QB_DARK_TEXT, width=1.5, alpha=0.7)
-        nx.draw_networkx_nodes(graph_data['graph'], pos_current, ax=current_ax,
-                              node_color=graph_data['colors'], node_size=graph_data['node_size'])
-        nx.draw_networkx_labels(graph_data['graph'], pos_current, graph_data['labels'], ax=current_ax,
-                               font_color='#000000', font_size=graph_data['font_size'], 
-                               font_weight='bold')
-        
+        nx.draw_networkx_edges(graph_data['graph'], pos_current, ax=current_ax, edge_color=QB_DARK_TEXT, width=1.5, alpha=0.7)
+        nx.draw_networkx_nodes(graph_data['graph'], pos_current, ax=current_ax, node_color=graph_data['colors'], node_size=graph_data['node_size'])
+        for node, (x, y) in pos_current.items():
+            text = current_ax.text(x, y, graph_data['labels'][node], fontsize=graph_data['font_size'], fontweight='bold', ha='center', va='center', color='white')
+            text.set_path_effects([matplotlib.patheffects.withStroke(linewidth=1.5, foreground='black')])
+
         # Add legend
-        current_ax.legend(handles=legend_elements, loc='upper left', framealpha=0.9,
-                 facecolor=QB_DARK_BG, edgecolor=QB_DARK_TEXT, labelcolor=QB_DARK_TEXT)
+        legend = current_ax.legend(handles=legend_elems, loc='upper left', labelcolor=QB_DARK_TEXT)
+        legend.set_frame_on(False)
     
     # Create animation
-    anim = FuncAnimation(fig, animate, fargs=(data, ax), frames=num_frames, interval=50, repeat=True)
+    anim = FuncAnimation(fig, animate, fargs=(data, ax, legend_elements), frames=num_frames, interval=50, repeat=True)
     animations.append(anim)
     
     # Save animation as GIF
